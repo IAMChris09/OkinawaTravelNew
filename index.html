@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🌺 沖繩旅遊情報站 - 地圖聯動完美版</title>
+    <title>🌺 沖繩旅遊情報站 - 獨立多欄終極版</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
@@ -63,7 +63,7 @@
             flex: 1.5;
             min-width: 350px;
             border-top: 8px solid #2a9d8f;
-            height: 620px;
+            height: 650px;
             display: flex;
             flex-direction: column;
         }
@@ -86,12 +86,7 @@
         /* 分頁標籤樣式 */
         .tabs {
             display: flex;
-            gap: 5px;
-            border-bottom: 2px solid #ddd;
-            padding-bottom: 8px;
-            margin-bottom: 15px;
-            overflow-x: auto;
-            white-space: nowrap;
+            gap: 5px; border-bottom: 2px solid #ddd; padding-bottom: 8px; margin-bottom: 15px; overflow-x: auto; white-space: nowrap;
         }
         .tab {
             padding: 8px 14px; background-color: #e9ecef; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: bold; color: #495057; transition: 0.2s;
@@ -103,7 +98,7 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
-            max-height: 500px;
+            max-height: 520px;
             overflow-y: auto;
         }
         .list-item {
@@ -115,10 +110,9 @@
         }
         .item-category { font-size: 11px; padding: 2px 6px; background-color: #e2e8f0; border-radius: 4px; font-weight: bold; }
         .item-title { font-size: 16px; font-weight: bold; margin: 5px 0; display: flex; justify-content: space-between; align-items: center; }
-        .item-title span { color: #333; }
         .item-link { color: var(--primary-color); text-decoration: none; font-size: 18px; padding: 0 5px; }
         .item-link:hover { transform: scale(1.2); }
-        .item-note { color: #666; font-size: 13px; background: #fff; padding: 5px 8px; border-radius: 4px; margin-top: 4px; border-left: 2px solid #ddd; pointer-events: none; }
+        .item-note { color: #555; font-size: 13px; background: #fff; padding: 6px 10px; border-radius: 4px; margin-top: 6px; border-left: 3px solid var(--secondary-color); pointer-events: none; }
 
         /* 地圖容器 */
         #map { width: 100%; flex-grow: 1; border-radius: 8px; border: 1px solid #ddd; }
@@ -146,16 +140,20 @@
             </div>
             <div class="form-group">
                 <label for="title">✏️ 名稱</label>
-                <input type="text" id="title" placeholder="例如：美麗海水族館" required>
+                <input type="text" id="title" placeholder="例如：古宇利大橋" required>
             </div>
             <div class="form-group">
-                <label for="url">🔗 網址 (網誌或 Google Map 分享連結)</label>
+                <label for="url">🔗 網址</label>
                 <input type="url" id="url" placeholder="https://..." required>
             </div>
             <div class="form-group">
-                <label for="note">💬 地圖座標 (可選，用於釘地圖藍標)</label>
-                <input type="text" id="note" placeholder="例如：26.6943, 127.8779">
-                <div class="note-text">💡 提示：在 Google Map 景點點右鍵複製座標貼上，點擊清單時地圖會飛過去喔！原備註功能可併入名稱。</div>
+                <label for="coords">🗺️ 地圖座標 (選填)</label>
+                <input type="text" id="coords" placeholder="例如：26.6943, 127.8779">
+                <div class="note-text">💡 提示：在 Google Map 點右鍵複製座標貼上。</div>
+            </div>
+            <div class="form-group">
+                <label for="note">💬 旅遊備註 (選填)</label>
+                <textarea id="note" rows="2" placeholder="例如：這裡看夕陽超美、附近有蝦蝦飯..."></textarea>
             </div>
             <button type="submit" id="submitBtn">✈️ 送出</button>
         </form>
@@ -179,18 +177,18 @@
     <div class="right-panel">
         <h2>🗺️ 沖繩互動地圖</h2>
         <div id="map"></div>
-        <p style="font-size: 12px; color: #666; margin: 5px 0 0 0;">💡 互動指南：直接<b>點擊中間的景點卡片</b>，地圖就會瞬間飛過去並跳出標籤！點擊右側的 🔗 可以打開原網頁。</p>
+        <p style="font-size: 12px; color: #666; margin: 5px 0 0 0;">💡 互動指南：點擊中間的<b>景點卡片</b>，地圖就會飛過去並跳出標籤氣泡！</p>
     </div>
 </div>
 
 <script>
     // ⚠️ 請在此處替換成你的 Google Apps Script 網頁應用程式網址
-    const GAS_WEB_APP_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
+    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzpnKUJWOn0w9YLhAFN5Bcd3OIOR7yo1IiHewrN2It75HHPRwAjDJsQy0uxVEM2VVV_/exec';
     
     let allData = []; 
     let currentTab = 'All'; 
     let map;
-    let markersMap = {}; // 用來存放所有地圖標記的物件，方便後續用 ID 對應觸發
+    let markersMap = {}; 
 
     window.onload = function() {
         initMap();
@@ -198,7 +196,6 @@
     };
 
     function initMap() {
-        // 設定預設定位在沖繩那霸
         map = L.map('map').setView([26.2124, 127.6809], 10); 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
@@ -231,54 +228,10 @@
         renderList();
     }
 
-    function renderList() {
-        const container = document.getElementById('listContainer');
-        container.innerHTML = '';
-
-        const filteredData = allData.filter(item => {
-            if (currentTab === 'All') return true;
-            return item.category === currentTab;
-        });
-
-        // 重新繪製地圖標記
-        updateMapMarkers(filteredData);
-
-        if (filteredData.length === 0) {
-            container.innerHTML = '<div style="text-align:center; color:#999; padding:20px;">此分類目前沒有資料喔！</div>';
-            return;
-        }
-
-        filteredData.forEach((item, index) => {
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'list-item';
-            
-            // 檢查這筆資料是否有填座標 (我們把它存在試算表的 note 欄位)
-            const hasCoords = parseCoordinates(item.note) ? 'style="color:#0077b6;"' : 'style="color:#999;"';
-            const locationIcon = parseCoordinates(item.note) ? '📍' : '🔗';
-            
-            itemDiv.innerHTML = `
-                <div>
-                    <span class="item-category">${item.category}</span>
-                    <div class="item-title">
-                        <span>${locationIcon} ${item.title}</span>
-                        <a class="item-link" href="${item.url}" target="_blank" onclick="event.stopPropagation();">🔗</a>
-                    </div>
-                </div>
-            `;
-
-            // 核心功能：為整個卡片綁定點擊事件！
-            itemDiv.addEventListener('click', () => {
-                focusOnMarker(item.note, item.title, index);
-            });
-
-            container.appendChild(itemDiv);
-        });
-    }
-
-    // 解析字串是否為有效座標 (例如 "26.6943, 127.8779")
-    function parseCoordinates(str) {
-        if (!str) return null;
-        const parts = str.split(',');
+    // 解析有效座標物件
+    function parseCoordinates(coordStr) {
+        if (!coordStr) return null;
+        const parts = coordStr.split(',');
         if (parts.length === 2) {
             const lat = parseFloat(parts[0].trim());
             const lng = parseFloat(parts[1].trim());
@@ -289,40 +242,73 @@
         return null;
     }
 
-    // 更新地圖標記
-    function updateMapMarkers(data) {
-        // 清除舊的標記
-        for (let key in markersMap) {
-            map.removeLayer(markersMap[key]);
+    function renderList() {
+        const container = document.getElementById('listContainer');
+        container.innerHTML = '';
+
+        const filteredData = allData.filter(item => {
+            if (currentTab === 'All') return true;
+            return item.category === currentTab;
+        });
+
+        updateMapMarkers(filteredData);
+
+        if (filteredData.length === 0) {
+            container.innerHTML = '<div style="text-align:center; color:#999; padding:20px;">此分類目前沒有資料喔！</div>';
+            return;
         }
+
+        filteredData.forEach((item, index) => {
+            const coords = parseCoordinates(item.coords);
+            const locationIcon = coords ? '📍' : '🔗';
+            
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'list-item';
+            
+            let noteHtml = item.note ? `<div class="item-note">💬 ${item.note}</div>` : '';
+            
+            itemDiv.innerHTML = `
+                <div>
+                    <span class="item-category">${item.category}</span>
+                    <div class="item-title">
+                        <span>${locationIcon} ${item.title}</span>
+                        <a class="item-link" href="${item.url}" target="_blank" onclick="event.stopPropagation();">🔗</a>
+                    </div>
+                    ${noteHtml}
+                </div>
+            `;
+
+            itemDiv.addEventListener('click', () => {
+                if (coords) {
+                    map.setView([coords.lat, coords.lng], 14, { animate: true, duration: 1 });
+                    if (markersMap[index]) markersMap[index].openPopup();
+                } else {
+                    alert(`提示：「${item.title}」沒有填寫地圖座標，無法定位。點擊右側 🔗 可直接開啟網址！`);
+                }
+            });
+
+            container.appendChild(itemDiv);
+        });
+    }
+
+    function updateMapMarkers(data) {
+        for (let key in markersMap) { map.removeLayer(markersMap[key]); }
         markersMap = {};
 
         data.forEach((item, index) => {
-            const coords = parseCoordinates(item.note);
+            const coords = parseCoordinates(item.coords);
             if (coords) {
-                // 在地圖上釘上小藍標，並將它存入 markersMap 物件中，Key值為 index
+                const popupContent = `
+                    <b>${item.category} - ${item.title}</b>
+                    ${item.note ? `<br><span style="color:#666;font-size:12px;">${item.note}</span>` : ''}
+                    <br><a href="${item.url}" target="_blank">打開連結</a>
+                `;
                 const marker = L.marker([coords.lat, coords.lng]).addTo(map)
-                 .bindPopup(`<b>${item.category} - ${item.title}</b><br><a href="${item.url}" target="_blank">打開外部連結</a>`);
+                 .bindPopup(popupContent);
                 
                 markersMap[index] = marker;
             }
         });
-    }
-
-    // 當使用者點擊卡片時，地圖平移並放大跳出氣泡
-    function focusOnMarker(coordStr, title, index) {
-        const coords = parseCoordinates(coordStr);
-        if (coords) {
-            // 1. 地圖飛過去 (飛到指定座標，放大層級設為 14)
-            map.setView([coords.lat, coords.lng], 14, { animate: true, duration: 1 });
-            
-            // 2. 自動主動彈出該標記的氣泡窗
-            if (markersMap[index]) {
-                markersMap[index].openPopup();
-            }
-        } else {
-            alert(`提示：「${title}」在輸入時沒有填寫地圖座標，因此地圖無法定位。您可以點擊右側的 🔗 圖示直接打開網址！`);
-        }
     }
 
     // 表單送出
@@ -340,7 +326,8 @@
             category: document.getElementById('category').value,
             title: document.getElementById('title').value,
             url: document.getElementById('url').value,
-            note: document.getElementById('note').value // 這邊直接把經緯度字串送到試算表的備註欄
+            coords: document.getElementById('coords').value.trim(), // 獨立欄位傳輸
+            note: document.getElementById('note').value.trim()      // 獨立欄位傳輸
         };
 
         fetch(GAS_WEB_APP_URL, {
@@ -355,6 +342,7 @@
             
             document.getElementById('title').value = '';
             document.getElementById('url').value = '';
+            document.getElementById('coords').value = '';
             document.getElementById('note').value = '';
 
             setTimeout(fetchList, 1000); 
