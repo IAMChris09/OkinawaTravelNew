@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🌺 沖繩旅遊情報站 - 獨立多欄終極版</title>
+    <title>🌺 ㄚ北裝可愛專屬沖繩旅遊情報站</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
@@ -140,11 +140,11 @@
             </div>
             <div class="form-group">
                 <label for="title">✏️ 名稱</label>
-                <input type="text" id="title" placeholder="例如：古宇利大橋" required>
+                <input type="text" id="title" placeholder="例如：波上宮" required>
             </div>
             <div class="form-group">
-                <label for="url">🔗 網址</label>
-                <input type="url" id="url" placeholder="https://..." required>
+                <label for="url">🔗 網址 (選填)</label>
+                <input type="url" id="url" placeholder="https://...">
             </div>
             <div class="form-group">
                 <label for="coords">🗺️ 地圖座標 (選填)</label>
@@ -267,12 +267,15 @@
             
             let noteHtml = item.note ? `<div class="item-note">💬 ${item.note}</div>` : '';
             
+            // 檢查是否有網址，有才顯示超連結
+            const linkHtml = item.url ? `<a class="item-link" href="${item.url}" target="_blank" onclick="event.stopPropagation();">🔗</a>` : '';
+            
             itemDiv.innerHTML = `
                 <div>
                     <span class="item-category">${item.category}</span>
                     <div class="item-title">
                         <span>${locationIcon} ${item.title}</span>
-                        <a class="item-link" href="${item.url}" target="_blank" onclick="event.stopPropagation();">🔗</a>
+                        ${linkHtml}
                     </div>
                     ${noteHtml}
                 </div>
