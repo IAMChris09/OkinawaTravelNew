@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌺 沖繩旅遊情報站 - 標籤與地圖版</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #0077b6;
+            --secondary-color: #00b4d8;
+            --accent-color: #ffb703;
+            --bg-color: #f0f8ff;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, "Microsoft JhengHei";
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .wrapper {
+            display: flex;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            flex-wrap: wrap;
+        }
+
+        /* 左側：表單 */
+        .left-panel {
+            background-color: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            flex: 1;
+            min-width: 320px;
+            max-width: 400px;
+            border-top: 8px solid var(--primary-color);
+            height: fit-content;
+        }
+
+        /* 中間：清單與分頁標籤 */
+        .middle-panel {
+            background-color: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            flex: 1.5;
+            min-width: 350px;
+            border-top: 8px solid var(--accent-color);
+        }
+
+        /* 右側：地圖 */
+        .right-panel {
+            background-color: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            flex: 1.5;
+            min-width: 350px;
+            border-top: 8px solid #2a9d8f;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1, h2 { color: var(--primary-color); margin-top: 0; margin-bottom: 15px; }
+        
+        /* 表單樣式 */
+        .form-group { margin-bottom: 12px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        input[type="text"], input[type="url"], textarea, select {
+            width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box;
+        }
+
+        button {
+            width: 100%; padding: 12px; background-color: var(--primary-color); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        button:hover { background-color: var(--secondary-color); }
+
+        /* 分頁標籤樣式 */
+        .tabs {
+            display: flex;
+            gap: 5px;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        .tab {
+            padding: 8px 14px;
+            background-color: #e9ecef;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            color: #495057;
+            transition: 0.2s;
+        }
+        .tab.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        /* 清單項目樣式 */
+        .list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 480px;
+            overflow-y: auto;
+        }
+        .list-item {
+            padding: 12px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            border-left: 5px solid var(--secondary-color);
+            transition: 0.2s;
+        }
+        .list-item:hover {
+            background-color: #e9ecef;
+        }
+        .item-category { font-size: 11px; padding: 2px 6px; background-color: #e2e8f0; border-radius: 4px; font-weight: bold; }
+        .item-title { font-size: 16px; font-weight: bold; margin: 5px 0; }
+        .item-title a { color: var(--primary-color); text-decoration: none; }
+        .item-note { color: #666; font-size: 13px; background: #fff; padding: 5px 8px; border-radius: 4px; margin-top: 4px; border-left: 2px solid #ddd; }
+
+        /* 地圖容器 */
+        #map {
+            width: 100%;
+            flex-grow: 1;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+
+        #statusMessage { margin-top: 10px; padding: 8px; border-radius: 6px; text-align: center; font-weight: bold; display: none; }
+        .success { background-color: #d4edda; color: #155724; }
+        .loading { background-color: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+    <div class="left-panel">
+        <h1>🌺 沖繩新增</h1>
+        <form id="travelForm">
+            <div class="form-group">
+                <label for="category">📌 分類</label>
+                <select id="category" required>
+                    <option value="🍽️ 美食（食）">🍽️ 美食（食）</option>
+                    <option value="🏨 住宿（住）">🏨 住宿（住）</option>
+                    <option value="🚗 交通（行）">🚗 交通（行）</option>
+                    <option value="📸 景點（遊）">📸 景點（遊）</option>
+                    <option value="🛍️ 購物/玩樂（玩）">🛍️ 購物/玩樂（玩）</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="title">✏️ 名稱</label>
+                <input type="text" id="title" placeholder="例如：美麗海水族館" required>
+            </div>
+            <div class="form-group">
+                <label for="url">🔗 網址 (可填 Google Map 連結)</label>
+                <input type="url" id="url" placeholder="https://..." required>
+            </div>
+            <div class="form-group">
+                <label for="note">💬 備註</label>
+                <textarea id="note" rows="2" placeholder="備註..."></textarea>
+            </div>
+            <button type="submit" id="submitBtn">✈️ 送出</button>
+        </form>
+        <div id="statusMessage"></div>
+    </div>
+
+    <div class="middle-panel">
+        <h2>📝 收集清單</h2>
+        <div class="tabs" id="tabsContainer">
+            <div class="tab active" onclick="switchTab('All')">🔍 全部 All</div>
+            <div class="tab" onclick="switchTab('🍽️ 美食（食）')">🍽️ 美食</div>
+            <div class="tab" onclick="switchTab('🏨 住宿（住）')">🏨 住宿</div>
+            <div class="tab" onclick="switchTab('🚗 交通（行）')">🚗 交通</div>
+            <div class="tab" onclick="switchTab('📸 景點（遊）')">📸 景點</div>
+            <div class="tab" onclick="switchTab('🛍️ 購物/玩樂（玩）')">🛍️ 玩樂</div>
+        </div>
+        <div id="listLoading" style="text-align:center;">同步中...</div>
+        <div class="list-container" id="listContainer"></div>
+    </div>
+
+    <div class="right-panel">
+        <h2>🗺️ 沖繩大地圖</h2>
+        <div id="map"></div>
+        <p style="font-size: 12px; color: #666; margin: 5px 0 0 0;">💡 提示：點擊右側連結可前往目標網頁；地圖預設定位在沖繩那霸。</p>
+    </div>
+</div>
+
+<script>
+    // ⚠️ 請在此處替換成你的 Google Apps Script 網頁應用程式網址
+    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzpnKUJWOn0w9YLhAFN5Bcd3OIOR7yo1IiHewrN2It75HHPRwAjDJsQy0uxVEM2VVV_/exec';
+    
+    let allData = []; // 儲存從 Google 抓下來的完整原始資料
+    let currentTab = 'All'; // 目前選擇的標籤
+    let map;
+
+    // 初始化網頁與地圖
+    window.onload = function() {
+        initMap();
+        fetchList();
+    };
+
+    // 初始化開源地圖 (定位在沖繩那霸市中心)
+    function initMap() {
+        map = L.map('map').setView([26.2124, 127.6809], 10); // 26.2124, 127.6809 是那霸的經緯度
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+    }
+
+    // 從 Google 試算表抓取資料
+    function fetchList() {
+        const container = document.getElementById('listContainer');
+        const loadingText = document.getElementById('listLoading');
+        loadingText.style.display = 'block';
+
+        fetch(GAS_WEB_APP_URL)
+        .then(response => response.json())
+        .then(data => {
+            loadingText.style.display = 'none';
+            allData = data.reverse(); // 最新加入的在最上面
+            renderList();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            loadingText.innerText = '❌ 無法讀取資料，請檢查 GAS 設定。';
+        });
+    }
+
+    // 切換分頁標籤
+    function switchTab(category) {
+        currentTab = category;
+        
+        // 更新標籤樣式
+        const tabs = document.querySelectorAll('.tab');
+        tabs.forEach(tab => tab.classList.remove('active'));
+        
+        // 讓被點擊的標籤變藍色
+        event.target.classList.add('active');
+        
+        renderList();
+    }
+
+    // 渲染清單畫面（包含標籤過濾篩選）
+    function renderList() {
+        const container = document.getElementById('listContainer');
+        container.innerHTML = '';
+
+        // 根據目前選擇的 Tab 篩選資料
+        const filteredData = allData.filter(item => {
+            if (currentTab === 'All') return true;
+            return item.category === currentTab;
+        });
+
+        if (filteredData.length === 0) {
+            container.innerHTML = '<div style="text-align:center; color:#999; padding:20px;">此分類目前沒有資料喔！</div>';
+            return;
+        }
+
+        filteredData.forEach(item => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'list-item';
+            
+            let noteHtml = item.note ? `<div class="item-note">${item.note}</div>` : '';
+            
+            itemDiv.innerHTML = `
+                <span class="item-category">${item.category}</span>
+                <div class="item-title"><a href="${item.url}" target="_blank">${item.title} 🔗</a></div>
+                ${noteHtml}
+            `;
+            container.appendChild(itemDiv);
+        });
+
+        // 自動更新地圖上的圖標 (如果你貼上的 Google Map 網址內含經緯度，這裡會嘗試抓取)
+        updateMapMarkers(filteredData);
+    }
+
+    // 解析 Google Map 網址中的經緯度並呈現在地圖上
+    function updateMapMarkers(data) {
+        // 先清除地圖上原本舊的圖標
+        map.eachLayer((layer) => {
+            if (layer instanceof L.Marker) {
+                map.removeLayer(layer);
+            }
+        });
+
+        data.forEach(item => {
+            let lat, lng;
+            
+            // 嘗試從 Google Map 網址中解析出經緯度 (格式如 @26.2045,127.6534)
+            const regex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+            const match = item.url.match(regex);
+            
+            if (match) {
+                lat = parseFloat(match[1]);
+                lng = parseFloat(match[2]);
+            } else {
+                // 如果沒有精確經緯度，就依據常見地區做隨機微調模擬（此處預設全部先釘在那霸附近作為展示，或你可以手動優化）
+                // 為了不讓地圖壞掉，這裡不強制標記沒有經緯度的網址
+                return;
+            }
+
+            // 在地圖上加上地標點
+            if (lat && lng) {
+                L.marker([lat, lng]).addTo(map)
+                 .bindPopup(`<b>${item.category} - ${item.title}</b><br><a href="${item.url}" target="_blank">點我打開連結</a>`);
+            }
+        });
+    }
+
+    // 表單送出機制
+    document.getElementById('travelForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const submitBtn = document.getElementById('submitBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        
+        submitBtn.disabled = true;
+        statusMessage.className = 'loading';
+        statusMessage.innerText = '正在傳送...✈️';
+        statusMessage.style.display = 'block';
+
+        const formData = {
+            category: document.getElementById('category').value,
+            title: document.getElementById('title').value,
+            url: document.getElementById('url').value,
+            note: document.getElementById('note').value
+        };
+
+        fetch(GAS_WEB_APP_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        })
+        .then(response => {
+            statusMessage.className = 'success';
+            statusMessage.innerText = '🎉 成功加入！';
+            
+            document.getElementById('title').value = '';
+            document.getElementById('url').value = '';
+            document.getElementById('note').value = '';
+
+            setTimeout(fetchList, 1000); 
+            setTimeout(() => { statusMessage.style.display = 'none'; }, 3000);
+        })
+        .catch(error => {
+            statusMessage.className = 'error';
+            statusMessage.innerText = '❌ 傳送失敗。';
+        })
+        .finally(() => {
+            submitBtn.disabled = false;
+        });
+    });
+</script>
+
+</body>
+</html>
