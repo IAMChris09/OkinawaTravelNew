@@ -301,7 +301,8 @@
         data.forEach((item, index) => {
             const coords = parseCoordinates(item.coords);
             if (coords) {
-                const popupContent = `<b>${item.category} - ${item.title}</b>${item.note ? `<br><span style='color:#666;font-size:12px;'>${item.note}</span>` : ''}`;
+                // const popupContent = `<b>${item.category} - ${item.title}</b>${item.note ? `<br><span style='color:#666;font-size:12px;'>${item.note}</span>` : ''}`;
+                const popupContent = `<b>${item.category} - ${item.title}</b>${item.note ? `<br><span style='color:#666;font-size:12px;'>${item.note}</span>` : ''}<br><a href="${item.url}" target="_blank">打開連結</a>`;
                 markersMap[index] = L.marker([coords.lat, coords.lng]).addTo(map).bindPopup(popupContent);
             }
         });
