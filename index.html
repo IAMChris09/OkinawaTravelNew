@@ -30,18 +30,23 @@
             flex-wrap: wrap;
         }
 
-        /* 左側：表單 */
+        /* 左側：表單與 AI 區塊 */
         .left-panel {
+            flex: 1;
+            min-width: 320px;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .card {
             background-color: white;
             padding: 25px;
             border-radius: 15px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-            flex: 1;
-            min-width: 320px;
-            max-width: 400px;
-            border-top: 8px solid var(--primary-color);
-            height: fit-content;
         }
+        .form-card { border-top: 8px solid var(--primary-color); }
+        .ai-card { border-top: 8px solid #9b59b6; }
 
         /* 中間：清單與分頁標籤 */
         .middle-panel {
@@ -63,18 +68,19 @@
             flex: 1.5;
             min-width: 350px;
             border-top: 8px solid #2a9d8f;
-            height: 650px;
+            height: 750px;
             display: flex;
             flex-direction: column;
         }
 
-        h1, h2 { color: var(--primary-color); margin-top: 0; margin-bottom: 15px; }
+        h1, h2, h3 { color: var(--primary-color); margin-top: 0; margin-bottom: 15px; }
+        h3 { color: #9b59b6; }
         
-        /* 表單樣式 */
+        /* 表單與通用輸入框樣式 */
         .form-group { margin-bottom: 12px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
         input[type="text"], input[type="url"], textarea, select {
-            width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box;
+            width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px;
         }
         .note-text { font-size: 11px; color: #666; margin-top: 3px; }
 
@@ -82,11 +88,17 @@
             width: 100%; padding: 12px; background-color: var(--primary-color); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s;
         }
         button:hover { background-color: var(--secondary-color); }
+        .ai-btn { background-color: #9b59b6; }
+        .ai-btn:hover { background-color: #8e44ad; }
+
+        /* AI 輸出對話框 */
+        #aiResponse {
+            margin-top: 15px; padding: 12px; background-color: #f5f0f9; border-left: 4px solid #9b59b6; border-radius: 6px; font-size: 14px; line-height: 1.6; max-height: 200px; overflow-y: auto; display: none; white-space: pre-line;
+        }
 
         /* 分頁標籤樣式 */
         .tabs {
-            display: flex;
-            gap: 5px; border-bottom: 2px solid #ddd; padding-bottom: 8px; margin-bottom: 15px; overflow-x: auto; white-space: nowrap;
+            display: flex; gap: 5px; border-bottom: 2px solid #ddd; padding-bottom: 8px; margin-bottom: 15px; overflow-x: auto; white-space: nowrap;
         }
         .tab {
             padding: 8px 14px; background-color: #e9ecef; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: bold; color: #495057; transition: 0.2s;
@@ -94,24 +106,12 @@
         .tab.active { background-color: var(--primary-color); color: white; }
 
         /* 清單項目樣式 */
-        .list-container {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            max-height: 520px;
-            overflow-y: auto;
-        }
-        .list-item {
-            padding: 12px; border-radius: 8px; background-color: #f8f9fa; border-left: 5px solid var(--secondary-color); transition: 0.2s; cursor: pointer;
-        }
-        .list-item:hover {
-            background-color: #e2e8f0;
-            border-left-color: var(--primary-color);
-        }
+        .list-container { display: flex; flex-direction: column; gap: 12px; max-height: 620px; overflow-y: auto; }
+        .list-item { padding: 12px; border-radius: 8px; background-color: #f8f9fa; border-left: 5px solid var(--secondary-color); transition: 0.2s; cursor: pointer; }
+        .list-item:hover { background-color: #e2e8f0; border-left-color: var(--primary-color); }
         .item-category { font-size: 11px; padding: 2px 6px; background-color: #e2e8f0; border-radius: 4px; font-weight: bold; }
         .item-title { font-size: 16px; font-weight: bold; margin: 5px 0; display: flex; justify-content: space-between; align-items: center; }
         .item-link { color: var(--primary-color); text-decoration: none; font-size: 18px; padding: 0 5px; }
-        .item-link:hover { transform: scale(1.2); }
         .item-note { color: #555; font-size: 13px; background: #fff; padding: 6px 10px; border-radius: 4px; margin-top: 6px; border-left: 3px solid var(--secondary-color); pointer-events: none; }
 
         /* 地圖容器 */
@@ -126,38 +126,48 @@
 
 <div class="wrapper">
     <div class="left-panel">
-        <h1>🌺 沖繩新增</h1>
-        <form id="travelForm">
+        <div class="card form-card">
+            <h1>🌺 沖繩新增</h1>
+            <form id="travelForm">
+                <div class="form-group">
+                    <label for="category">📌 分類</label>
+                    <select id="category" required>
+                        <option value="🍽️ 美食（食）">🍽️ 美食（食）</option>
+                        <option value="🏨 住宿（住）">🏨 住宿（住）</option>
+                        <option value="🚗 交通（行）">🚗 交通（行）</option>
+                        <option value="📸 景點（遊）">📸 景點（遊）</option>
+                        <option value="🛍️ 購物/玩樂（玩）">🛍️ 購物/玩樂（玩）</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="title">✏️ 名稱</label>
+                    <input type="text" id="title" placeholder="例如：古宇利大橋" required>
+                </div>
+                <div class="form-group">
+                    <label for="url">🔗 網址 (選填)</label>
+                    <input type="url" id="url" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                    <label for="coords">🗺️ 地圖座標 (選填)</label>
+                    <input type="text" id="coords" placeholder="例如：26.6943, 127.8779">
+                </div>
+                <div class="form-group">
+                    <label for="note">💬 旅遊備註 (選填)</label>
+                    <textarea id="note" rows="2" placeholder="備註..."></textarea>
+                </div>
+                <button type="submit" id="submitBtn">✈️ 送出</button>
+            </form>
+            <div id="statusMessage"></div>
+        </div>
+
+        <div class="card ai-card">
+            <h3>🤖 AI 沖繩小導遊</h3>
             <div class="form-group">
-                <label for="category">📌 分類</label>
-                <select id="category" required>
-                    <option value="🍽️ 美食（食）">🍽️ 美食（食）</option>
-                    <option value="🏨 住宿（住）">🏨 住宿（住）</option>
-                    <option value="🚗 交通（行）">🚗 交通（行）</option>
-                    <option value="📸 景點（遊）">📸 景點（遊）</option>
-                    <option value="🛍️ 購物/玩樂（玩）">🛍️ 購物/玩樂（玩）</option>
-                </select>
+                <textarea id="aiQuestion" rows="3" placeholder="例如：幫我用現有清單規劃一個順路的兩天一夜行程，並告訴我交通怎麼排最順？"></textarea>
             </div>
-            <div class="form-group">
-                <label for="title">✏️ 名稱</label>
-                <input type="text" id="title" placeholder="例如：波上宮" required>
-            </div>
-            <div class="form-group">
-                <label for="url">🔗 網址 (選填)</label>
-                <input type="url" id="url" placeholder="https://...">
-            </div>
-            <div class="form-group">
-                <label for="coords">🗺️ 地圖座標 (選填)</label>
-                <input type="text" id="coords" placeholder="例如：26.6943, 127.8779">
-                <div class="note-text">💡 提示：在 Google Map 點右鍵複製座標貼上。</div>
-            </div>
-            <div class="form-group">
-                <label for="note">💬 旅遊備註 (選填)</label>
-                <textarea id="note" rows="2" placeholder="例如：這裡看夕陽超美、附近有蝦蝦飯..."></textarea>
-            </div>
-            <button type="submit" id="submitBtn">✈️ 送出</button>
-        </form>
-        <div id="statusMessage"></div>
+            <button class="ai-btn" onclick="askGeminiAI()" id="aiBtn">✨ 請 AI 規劃</button>
+            <div id="aiResponse"></div>
+        </div>
     </div>
 
     <div class="middle-panel">
@@ -177,12 +187,12 @@
     <div class="right-panel">
         <h2>🗺️ 沖繩互動地圖</h2>
         <div id="map"></div>
-        <p style="font-size: 12px; color: #666; margin: 5px 0 0 0;">💡 互動指南：點擊中間的<b>景點卡片</b>，地圖就會飛過去並跳出標籤氣泡！</p>
+        <p style="font-size: 12px; color: #666; margin: 5px 0 0 0;">💡 互動指南：點擊中間景點卡片地圖會自動對焦；在下方問 AI 它能直接幫你排行程！</p>
     </div>
 </div>
 
 <script>
-    // ⚠️ 請在此處替換成你的 Google Apps Script 網頁應用程式網址
+    // ⚠️ 填入你的 Google Apps Script 網頁應用程式網址
     const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzpnKUJWOn0w9YLhAFN5Bcd3OIOR7yo1IiHewrN2It75HHPRwAjDJsQy0uxVEM2VVV_/exec';
     
     let allData = []; 
@@ -197,9 +207,7 @@
 
     function initMap() {
         map = L.map('map').setView([26.2124, 127.6809], 10); 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
     }
 
     function fetchList() {
@@ -216,7 +224,7 @@
         })
         .catch(error => {
             console.error('Error:', error);
-            loadingText.innerText = '❌ 無法讀取資料，請檢查 GAS 設定。';
+            loadingText.innerText = '❌ 無法同步資料。';
         });
     }
 
@@ -228,16 +236,13 @@
         renderList();
     }
 
-    // 解析有效座標物件
     function parseCoordinates(coordStr) {
         if (!coordStr) return null;
         const parts = coordStr.split(',');
         if (parts.length === 2) {
             const lat = parseFloat(parts[0].trim());
             const lng = parseFloat(parts[1].trim());
-            if (!isNaN(lat) && !isNaN(lng)) {
-                return { lat, lng };
-            }
+            if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
         }
         return null;
     }
@@ -261,15 +266,11 @@
         filteredData.forEach((item, index) => {
             const coords = parseCoordinates(item.coords);
             const locationIcon = coords ? '📍' : '🔗';
+            const linkHtml = item.url ? `<a class="item-link" href="${item.url}" target="_blank" onclick="event.stopPropagation();">🔗</a>` : '';
+            const noteHtml = item.note ? `<div class="item-note">💬 ${item.note}</div>` : '';
             
             const itemDiv = document.createElement('div');
             itemDiv.className = 'list-item';
-            
-            let noteHtml = item.note ? `<div class="item-note">💬 ${item.note}</div>` : '';
-            
-            // 檢查是否有網址，有才顯示超連結
-            const linkHtml = item.url ? `<a class="item-link" href="${item.url}" target="_blank" onclick="event.stopPropagation();">🔗</a>` : '';
-            
             itemDiv.innerHTML = `
                 <div>
                     <span class="item-category">${item.category}</span>
@@ -286,10 +287,9 @@
                     map.setView([coords.lat, coords.lng], 14, { animate: true, duration: 1 });
                     if (markersMap[index]) markersMap[index].openPopup();
                 } else {
-                    alert(`提示：「${item.title}」沒有填寫地圖座標，無法定位。點擊右側 🔗 可直接開啟網址！`);
+                    alert(`提示：「${item.title}」沒有填寫地圖座標，無法定位。`);
                 }
             });
-
             container.appendChild(itemDiv);
         });
     }
@@ -301,17 +301,60 @@
         data.forEach((item, index) => {
             const coords = parseCoordinates(item.coords);
             if (coords) {
-                const popupContent = `
-                    <b>${item.category} - ${item.title}</b>
-                    ${item.note ? `<br><span style="color:#666;font-size:12px;">${item.note}</span>` : ''}
-                    <br><a href="${item.url}" target="_blank">打開連結</a>
-                `;
-                const marker = L.marker([coords.lat, coords.lng]).addTo(map)
-                 .bindPopup(popupContent);
-                
-                markersMap[index] = marker;
+                const popupContent = `<b>${item.category} - ${item.title}</b>${item.note ? `<br><span style='color:#666;font-size:12px;'>${item.note}</span>` : ''}`;
+                markersMap[index] = L.marker([coords.lat, coords.lng]).addTo(map).bindPopup(popupContent);
             }
         });
+    }
+
+    // 🌟 核心功能：連動呼叫 Gemini 1.5 Flash API
+    async function askGeminiAI() {
+        const questionField = document.getElementById('aiQuestion');
+        const responseBox = document.getElementById('aiResponse');
+        const aiBtn = document.getElementById('aiBtn');
+        const userQuestion = questionField.value.trim();
+    
+        if (!userQuestion) { alert('請輸入你想問 AI 的旅遊問題！'); return; }
+        if (allData.length === 0) { alert('目前沒有收集任何景點，AI 無法分析喔！'); return; }
+    
+        aiBtn.disabled = true;
+        aiBtn.innerText = '🔮 AI 正在通靈規劃中...';
+        responseBox.style.display = 'block';
+        responseBox.innerText = '💡 正在安全傳送至後端分析中，請稍候幾秒鐘...';
+    
+        const listContext = allData.map((item, idx) => {
+            return `[景點${idx+1}] 分類:${item.category}, 名稱:${item.title}, 座標:[${item.coords || '無'}], 備註:${item.note || '無'}`;
+        }).join('\n');
+    
+        const fullPrompt = `你是一位專業的沖繩旅遊規劃專家。以下是用戶目前的候選清單：\n\n${listContext}\n\n請完全基於以上清單，用親切的繁體中文回答問題：${userQuestion}`;
+    
+        try {
+            // 🌟 改為直接 POST 給你的 GAS 網址，把 Key 的事交給後端
+            const response = await fetch(GAS_WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: "askAI",
+                    prompt: fullPrompt
+                })
+            });
+    
+            // 備註：因為 GAS 重新導向或 no-cors 的限制，
+            // 如果你之前 GAS 沒設定妥當，最安全的讀取回傳方式是直接解析
+            const result = await response.json();
+            if(result.result === "success") {
+                responseBox.innerText = result.reply;
+            } else {
+                responseBox.innerText = '❌ 後端 AI 處理失敗：' + result.message;
+            }
+        } catch (error) {
+            console.error(error);
+            // 💡 提示：如果遇到 CORS 攔截導致前端抓不到 JSON，
+            // 建議在本地端測試，或者確保 GAS 部署時有選擇「任何人」皆可執行。
+            responseBox.innerText = '❌ 傳送請求至後端時發生錯誤，請確認 GAS 是否已重新部署為新版本。';
+        } finally {
+            aiBtn.disabled = false;
+            aiBtn.innerText = '✨ 請 AI 規劃';
+        }
     }
 
     // 表單送出
@@ -321,43 +364,25 @@
         const statusMessage = document.getElementById('statusMessage');
         
         submitBtn.disabled = true;
-        statusMessage.className = 'loading';
-        statusMessage.innerText = '正在傳送...✈️';
-        statusMessage.style.display = 'block';
+        statusMessage.className = 'loading'; statusMessage.innerText = '正在傳送...✈️'; statusMessage.style.display = 'block';
 
         const formData = {
             category: document.getElementById('category').value,
             title: document.getElementById('title').value,
             url: document.getElementById('url').value,
-            coords: document.getElementById('coords').value.trim(), // 獨立欄位傳輸
-            note: document.getElementById('note').value.trim()      // 獨立欄位傳輸
+            coords: document.getElementById('coords').value.trim(),
+            note: document.getElementById('note').value.trim()
         };
 
-        fetch(GAS_WEB_APP_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData)
-        })
-        .then(response => {
-            statusMessage.className = 'success';
-            statusMessage.innerText = '🎉 成功加入！';
-            
-            document.getElementById('title').value = '';
-            document.getElementById('url').value = '';
-            document.getElementById('coords').value = '';
-            document.getElementById('note').value = '';
-
+        fetch(GAS_WEB_APP_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) })
+        .then(() => {
+            statusMessage.className = 'success'; statusMessage.innerText = '🎉 成功加入！';
+            document.getElementById('title').value = ''; document.getElementById('url').value = ''; document.getElementById('coords').value = ''; document.getElementById('note').value = '';
             setTimeout(fetchList, 1000); 
             setTimeout(() => { statusMessage.style.display = 'none'; }, 3000);
         })
-        .catch(error => {
-            statusMessage.className = 'error';
-            statusMessage.innerText = '❌ 傳送失敗。';
-        })
-        .finally(() => {
-            submitBtn.disabled = false;
-        });
+        .catch(() => { statusMessage.className = 'error'; statusMessage.innerText = '❌ 傳送失敗。'; })
+        .finally(() => { submitBtn.disabled = false; });
     });
 </script>
 
